@@ -9,7 +9,7 @@ from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import QThread, pyqtSignal, QStandardPaths, Qt 
 import yt_dlp
 
-# --- (Función resource_path - IDÉNTICA) ---
+# --- (Función resource_path) ---
 def resource_path(relative_path):
     """ Obtiene la ruta absoluta al recurso, funciona para dev y para PyInstaller """
     try:
@@ -18,7 +18,7 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
-# --- (Función format_bytes - IDÉNTICA) ---
+# --- (Función format_bytes) ---
 def format_bytes(b):
     if b is None or b < 0:
         return "? MB"
@@ -31,7 +31,7 @@ def format_bytes(b):
     else:
         return f"{b / (1024 * 1024 * 1024):.1f} GB"
 
-# --- (Clase UpdateWorker - IDÉNTICA, usa requests) ---
+# --- (Clase UpdateWorker) ---
 class UpdateWorker(QThread):
     finished = pyqtSignal(str) 
     URL = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
@@ -42,7 +42,7 @@ class UpdateWorker(QThread):
             self.finished.emit("Buscando actualizaciones del motor (yt-dlp)...")
             r = requests.get(self.URL, stream=True, allow_redirects=True, timeout=30)
             r.raise_for_status() 
-            # ¡MODIFICADO! Usa resource_path para guardar el exe
+            # Usa resource_path para guardar el exe
             # Así, si la app se ejecuta desde un .exe, guarda el yt-dlp.exe al lado
             ruta_guardado = resource_path(self.FILENAME)
             with open(ruta_guardado, 'wb') as f:
@@ -52,7 +52,7 @@ class UpdateWorker(QThread):
         except Exception as e:
             self.finished.emit(f"Error al actualizar el motor: {e}")
 
-# --- (Clase Worker de descarga - IDÉNTICA) ---
+# --- (Clase Worker de descarga) ---
 class Worker(QThread):
     progreso = pyqtSignal(dict)
     finalizado = pyqtSignal(str)
@@ -97,10 +97,9 @@ class VentanaPrincipal(QWidget):
         self.lbl_ruta = QLabel(f"Guardar en: {self.ruta_descarga}")
         self.lbl_ruta.setWordWrap(True) 
         
-        # --- ¡GUI MODIFICADA! ---
         self.rb_video = QRadioButton("Vídeo (MP4)")
         self.rb_audio = QRadioButton("Audio (MP3)")
-        # (Hemos borrado el botón de imagen)
+       
         self.rb_video.setChecked(True) 
         
         self.btn_descargar = QPushButton("Descargar")
@@ -113,12 +112,10 @@ class VentanaPrincipal(QWidget):
         
         layout_principal = QVBoxLayout()
         self.setLayout(layout_principal)
-        
-        # --- ¡GUI MODIFICADA! ---
+       
         layout_opciones = QHBoxLayout()
         layout_opciones.addWidget(self.rb_video)
         layout_opciones.addWidget(self.rb_audio)
-        # (Ya no añadimos el botón de imagen)
         
         layout_principal.addWidget(self.etiqueta_url)
         layout_principal.addWidget(self.txt_url)
@@ -133,7 +130,7 @@ class VentanaPrincipal(QWidget):
         
         self.iniciar_actualizacion()
 
-    # --- (Funciones de elegir_ruta, iniciar_actualizacion, etc. IDÉNTICAS) ---
+    # --- (Funciones de elegir_ruta, iniciar_actualizacion, etc.) ---
     def elegir_ruta(self):
         nueva_ruta = QFileDialog.getExistingDirectory(self, "Seleccionar Carpeta", self.ruta_descarga)
         if nueva_ruta:
@@ -148,7 +145,7 @@ class VentanaPrincipal(QWidget):
     def al_terminar_actualizacion(self, mensaje):
         self.log_area.append(mensaje)
 
-    # --- ¡LÓGICA DE DESCARGA SIMPLIFICADA! ---
+    # --- LÓGICA DE DESCARGA ---
     def iniciar_descarga(self):
         url = self.txt_url.text() 
         if not url:
@@ -162,7 +159,7 @@ class VentanaPrincipal(QWidget):
         self.progress_bar.setVisible(True)
         self.progress_bar.setFormat("Iniciando...")
 
-        # --- (Lógica de Motor y Cookies - IDÉNTICA) ---
+        # --- (Lógica de Motor y Cookies) ---
         ruta_limpia = self.ruta_descarga.replace('\\', '/')
         ydl_opts_base = {'noplaylist': True}
         motor_externo = resource_path('yt-dlp.exe')
@@ -180,13 +177,13 @@ class VentanaPrincipal(QWidget):
             else:
                 self.log_area.append("ADVERTENCIA: No se encontró 'cookies_x.txt'.")
                 
-        # --- (Lógica de Nombres - IDÉNTICA) ---
+        # --- (Lógica de Nombres) ---
         if "x.com" in url.lower() or "twitter.com" in url.lower() or "instagram.com" in url.lower():
              plantilla_salida = f"{ruta_limpia}/%(display_id)s.%(ext)s"
         else:
              plantilla_salida = f"{ruta_limpia}/%(title)s.%(ext)s"
              
-        # --- ¡LÓGICA DE FORMATO SIMPLIFICADA! ---
+        # --- LÓGICA DE FORMATO ---
         if self.rb_audio.isChecked():
             self.log_area.append("Modo: Audio (MP3)")
             ydl_opts_base.update({'format': 'bestaudio/best', 'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}], 'outtmpl': plantilla_salida})
@@ -201,7 +198,7 @@ class VentanaPrincipal(QWidget):
         self.worker.error.connect(self.descarga_error)
         self.worker.start()
 
-    # --- (El resto de funciones de slots son IDÉNTICAS) ---
+  
     def actualizar_progreso(self, d):
         if d['status'] == 'downloading':
             porcentaje_str = d.get('_percent_str', '0.0%').strip().replace('%', '')
@@ -232,9 +229,10 @@ class VentanaPrincipal(QWidget):
         self.progress_bar.setVisible(False)
         self.progress_bar.setFormat("%p%")
 
-# --- Punto de entrada (idéntico) ---
+# --- Punto de entrada ---
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     ventana = VentanaPrincipal()
     ventana.show()
+
     sys.exit(app.exec())
